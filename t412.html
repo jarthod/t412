@@ -1,0 +1,24 @@
+<html>
+  <head>
+    <title>T412</title>
+  </head>
+  <body>
+    <script type="text/javascript">
+      if(self.fetch) {
+        var authHeaders = new Headers({"Authorization": ""});
+
+        fetch('https://api.t411.ch/users/profile/2870585', {headers: authHeaders})
+        .then(function(response) {
+          console.log(response);
+          return response.text();
+        })
+        .then(function(myBlob) {
+          console.log(myBlob);
+          document.write(myBlob);
+        });
+      } else {
+        document.write('fetch not supported');
+      }
+    </script>
+  </body>
+</html>
