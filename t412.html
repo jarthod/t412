@@ -4,20 +4,35 @@
   </head>
   <body>
     <script type="text/javascript">
-      if(self.fetch) {
-        var authHeaders = new Headers({"Authorization": ""});
+      try {
+        if (!'fetch' in window) {
+          throw new Error("your browser doesn't support fetch, check out http://caniuse.com/#search=fetch");
+        }
+        // window.localStorage.setItem('t412-token', 'xxxxxx');
+        var token = window.localStorage.getItem('t412-token');
+        var authHeaders = new Headers({"Authorization": token});
+        var debug = true;
 
-        fetch('https://api.t411.ch/users/profile/2870585', {headers: authHeaders})
-        .then(function(response) {
-          console.log(response);
-          return response.text();
-        })
-        .then(function(myBlob) {
-          console.log(myBlob);
-          document.write(myBlob);
-        });
-      } else {
-        document.write('fetch not supported');
+        function formatBytes(bytes,decimals) {
+           if (bytes === 0) return '0 Byte';
+           var k = 1024; // or 1024 for binary
+           var sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB', 'YB'];
+           var i = Math.floor(Math.log(bytes) / Math.log(k));
+           return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
+        }
+
+        function updateProfile(profile) {
+          document.write(`looged in as ${profile.username} — ↑ ${formatBytes(profile.uploaded)} / ↓ ${formatBytes(profile.downloaded)}`);
+        }
+
+        fetch('http://localhost:3000/users/profile/2870585', {headers: authHeaders})
+        .then(response => response.json())
+        .then(profile => updateProfile(profile));
+
+      }
+      catch (exc) {
+        document.write(exc);
+        throw exc
       }
     </script>
   </body>
