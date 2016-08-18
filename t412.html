@@ -1,16 +1,37 @@
 <html>
   <head>
     <title>T412</title>
+    <style type="text/css">
+      body {
+        font-family: sans-serif;
+        max-width: 1000px;
+      }
+      #error {
+        color: #e52;
+      }
+    </style>
   </head>
   <body>
+    <header></header>
+    <form id="login-form" onsubmit="signIn(); return false;">
+      <input type="text" id="username" name="username" placeholder="username"/>
+      <input type="password" id="password" name="password" placeholder="password"/>
+      <input type="submit" value="login"/>
+    </form>
+    <div id="search">
+      <form id="search-form" onsubmit="search(); return false;">
+        <input type="text" id="q" name="q" placeholder="Query" autofocus="true"/>
+        <input type="submit" value="Search"/>
+      </form>
+    </div>
+    <div id="error"></div>
     <script type="text/javascript">
       try {
         if (!'fetch' in window) {
           throw new Error("your browser doesn't support fetch, check out http://caniuse.com/#search=fetch");
         }
-        // window.localStorage.setItem('t412-token', 'xxxxxx');
-        var token = window.localStorage.getItem('t412-token');
-        var authHeaders = new Headers({"Authorization": token});
+
+        var state = {};
         var debug = true;
 
         function formatBytes(bytes,decimals) {
@@ -21,17 +42,79 @@
            return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
         }
 
-        function updateProfile(profile) {
-          document.write(`looged in as ${profile.username} — ↑ ${formatBytes(profile.uploaded)} / ↓ ${formatBytes(profile.downloaded)}`);
+        function handleErrors(param) {
+          if (param instanceof TypeError)
+            state.error = "Network error: " + param.message;
+          else if (typeof param === Response && !param.ok)
+            state.error = "Server error: " + param.statusText;
+          else
+            return param;
+          render();
         }
 
-        fetch('http://localhost:3000/users/profile/2870585', {headers: authHeaders})
-        .then(response => response.json())
-        .then(profile => updateProfile(profile));
+        function signIn() {
+          var loginForm = document.querySelector('#login-form');
+          fetch('http://localhost:3000/auth', {method: 'POST', body: new FormData(loginForm)})
+          .then(handleErrors).then(response => response.json())
+          .then(auth => {
+            delete state.error;
+            if (auth.error) {
+              state.error = auth.error;
+            } else {
+              state.token = auth.token;
+              state.uid = auth.uid;
+              localStorage.setItem('t412-token', state.token);
+              localStorage.setItem('t412-uid', state.uid);
+              getProfile();
+            }
+            render();
+          }).catch(handleErrors);
+        }
 
+        function signOut() {
+          localStorage.removeItem('t412-token');
+          localStorage.removeItem('t412-uid');
+          state = {};
+          render(state);
+        }
+
+        function getProfile() {
+          fetch('http://localhost:3000/users/profile/' + state.uid, {headers: {"Authorization": state.token}})
+          .then(handleErrors).then(response => response.json()).then(profile => {
+            state.profile = profile;
+            render();
+          }).catch(handleErrors);
+        }
+
+        function render() {
+          var header = document.querySelector('header');
+          var search = document.querySelector('#search');
+          var loginForm = document.querySelector('#login-form');
+          if (state.token) {
+            if (state.profile) {
+              header.innerHTML = `logged in as <i>${state.profile.username}</i> — ↑ ${formatBytes(state.profile.uploaded)} / ↓ ${formatBytes(state.profile.downloaded)} <a href="#" onclick="signOut(); return false;">sign out</a>`;
+            } else {
+              header.innerHTML = `loading profile ${state.uid}…`
+            }
+            loginForm.style.display = 'none';
+            search.style.display = 'block';
+          } else {
+            header.innerHTML = `not logged in`;
+            loginForm.style.display = 'block';
+            search.style.display = 'none';
+          }
+          document.querySelector('#error').innerText = (state.error ? state.error : '');
+        }
+
+        // Load saved infos
+        state.token = localStorage.getItem('t412-token');
+        state.uid = localStorage.getItem('t412-uid');
+        if (state.token && state.uid) getProfile();
+
+        render();
       }
       catch (exc) {
-        document.write(exc);
+        document.querySelector('#error').innerText = exc;
         throw exc
       }
     </script>
