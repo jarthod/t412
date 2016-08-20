@@ -1,30 +1,55 @@
 <html>
   <head>
     <title>T412</title>
+    <meta charset="UTF-8">
     <style type="text/css">
-      body {
-        font-family: sans-serif;
-        max-width: 1000px;
-      }
-      #error {
-        color: #e52;
-      }
+      body { font-family: sans-serif; max-width: 1200px; margin: 0 auto; padding: 0 2vw; color: #333; }
+      a { color: #27b; text-decoration: none; }
+      a:hover { text-decoration: underline; }
+      header { display: flex; align-items: center; justify-content: space-between; margin: 2vh 0; }
+      h1 { margin: 0; }
+      #error { color: #e43; margin: 2vh 0; }
+      form { margin: 0; }
+      #search-form { display: flex; align-items: center; font-size: 2em; margin-bottom: 1.5vh; }
+      #q { flex: 1; border: none; outline: none; font-size: 1em; margin-left: 0.5em; }
+      table { width: 100%; }
+      th { font-size: 0.8em; color: #888; text-transform: uppercase; padding: 1vh 0.5em; }
+      td { padding: 0.5vh 0.5em; }
+      .age, .size, .down, .seed { text-align: right; }
+      .name { text-align: left; }
+      .name i { font-style: normal; color: #e43; }
     </style>
   </head>
   <body>
-    <header></header>
-    <form id="login-form" onsubmit="signIn(); return false;">
-      <input type="text" id="username" name="username" placeholder="username"/>
-      <input type="password" id="password" name="password" placeholder="password"/>
-      <input type="submit" value="login"/>
-    </form>
+    <header>
+      <h1>T412</h1>
+      <div id="profile">
+      </div>
+      <form id="login-form" onsubmit="signIn(); return false;">
+        <input type="text" id="username" name="username" placeholder="username"/>
+        <input type="password" id="password" name="password" placeholder="password"/>
+        <input type="submit" value="login"/>
+      </form>
+    </header>
+    <div id="error"></div>
     <div id="search">
       <form id="search-form" onsubmit="search(); return false;">
+        <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24"><path fill="#333" d="M21.172 24l-7.387-7.387c-1.388.874-3.024 1.387-4.785 1.387-4.971 0-9-4.029-9-9s4.029-9 9-9 9 4.029 9 9c0 1.761-.514 3.398-1.387 4.785l7.387 7.387-2.828 2.828zm-12.172-8c3.859 0 7-3.14 7-7s-3.141-7-7-7-7 3.14-7 7 3.141 7 7 7z"/></svg>
         <input type="text" id="q" name="q" placeholder="Query" autofocus="true"/>
-        <input type="submit" value="Search"/>
       </form>
+      <table id="torrents" cellpadding="0" cellspacing="0" border="0">
+        <thead>
+          <tr>
+            <th class="name">Name</th>
+            <th class="age">Age</th>
+            <th class="size">Size</th>
+            <th class="down">Downs</th>
+            <th class="seed">Seed</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
     </div>
-    <div id="error"></div>
     <script type="text/javascript">
       try {
         if (!'fetch' in window) {
@@ -34,21 +59,47 @@
         var state = {};
         var debug = true;
 
-        function formatBytes(bytes,decimals) {
+        function formatBytes(bytes, decimals) {
            if (bytes === 0) return '0 Byte';
            var k = 1024; // or 1024 for binary
            var sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB', 'YB'];
            var i = Math.floor(Math.log(bytes) / Math.log(k));
-           return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
+           return `${parseFloat((bytes / Math.pow(k, i)).toFixed(1))} <small>${sizes[i]}</small>`;
+        }
+
+        function formatAge(time) {
+          var delta = Math.round((+new Date - new Date(time)) / 1000);
+          if (delta < 3600) {
+            return `${Math.floor(delta / 60)} minutes`;
+          } else if (delta < 3600 * 24) {
+            return `${Math.floor(delta / 3600)} hours`;
+          } else if (delta < 3600 * 24 * 30.5) {
+            return `${Math.floor(delta / 3600 / 24)} days`;
+          } else if (delta < 3600 * 24 * 30.5 * 12) {
+            return `${Math.floor(delta / 3600 / 24 / 30.5)} months`;
+          } else {
+            return `${Math.floor(delta / 3600 / 24 / 365)} years`;
+          }
+        }
+
+        function arrayBufferToBase64( buffer ) {
+            var binary = '';
+            var bytes = new Uint8Array( buffer );
+            var len = bytes.byteLength;
+            for (var i = 0; i < len; i++) {
+                binary += String.fromCharCode( bytes[ i ] );
+            }
+            return window.btoa( binary );
         }
 
         function handleErrors(param) {
-          if (param instanceof TypeError)
-            state.error = "Network error: " + param.message;
-          else if (typeof param === Response && !param.ok)
-            state.error = "Server error: " + param.statusText;
-          else
-            return param;
+          if (param instanceof Response) {
+            if (!param.ok)
+              state.error = "Server error: " + param.statusText;
+            else
+              return param;
+          } else
+            state.error = "Error: " + param.message;
           render();
         }
 
@@ -86,35 +137,105 @@
           }).catch(handleErrors);
         }
 
+        function formatQuery(query) {
+          return query.split(/\s+/).map(word => (/\d/.test(word) ? word + '*' : word)).join(' ');
+        }
+
+        function search() {
+          var query = document.querySelector('#q').value;
+          fetch('http://localhost:3000/torrents/search/' + formatQuery(query) + '?limit=30', {headers: {"Authorization": state.token}})
+          .then(handleErrors).then(response => response.json())
+          .then(result => {
+            delete state.error;
+            if (result.error) {
+              state.error = result.error;
+            } else {
+              state.torrents = result.torrents.sort((a, b) => { return b.seeders - a.seeders; });
+              localStorage.setItem('t412-torrents', JSON.stringify(state.torrents));
+              localStorage.setItem('t412-query', query);
+            }
+            render();
+          }).catch(handleErrors);
+        }
+
+        function downloadTorrent(a, id, name) {
+          if (a.download) return true;
+          fetch('http://localhost:3000/torrents/download/' + id, {headers: {"Authorization": state.token}})
+          .then(handleErrors).then(response => response.arrayBuffer())
+          .then(data => {
+            delete state.error;
+            var encoded = arrayBufferToBase64(data);
+            a.href = 'data:application/x-bittorrent;base64,' + encoded;
+            a.download= name+'.torrent';
+            a.click();
+          }).catch(handleErrors);
+          return false;
+        }
+
+        function renderTorrent(torrent) {
+          return `<tr>
+            <td class="name">
+              ${torrent.categoryname} /
+              <a href="#" onclick='return downloadTorrent(this, ${parseInt(torrent.id)}, ${JSON.stringify(torrent.rewritename)});'>${torrent.name}</a>
+              ${torrent.isVerified ? '' : '<i>❌</i>'}
+            </td>
+            <td class="age">${formatAge(torrent.added)}</td>
+            <td class="size">${formatBytes(torrent.size)}</td>
+            <td class="down">${torrent.times_completed}</td>
+            <td class="seed">${torrent.seeders}</td>
+          </tr>`;
+        }
+
         function render() {
-          var header = document.querySelector('header');
+          var profile = document.querySelector('#profile');
           var search = document.querySelector('#search');
           var loginForm = document.querySelector('#login-form');
           if (state.token) {
+            profile.style.display = 'block';
             if (state.profile) {
-              header.innerHTML = `logged in as <i>${state.profile.username}</i> — ↑ ${formatBytes(state.profile.uploaded)} / ↓ ${formatBytes(state.profile.downloaded)} <a href="#" onclick="signOut(); return false;">sign out</a>`;
+              profile.innerHTML = `logged in as <b>${state.profile.username}</b> (↑ ${formatBytes(state.profile.uploaded)} / ↓ ${formatBytes(state.profile.downloaded)}) <a href="#" onclick="signOut(); return false;">sign out</a>`;
             } else {
-              header.innerHTML = `loading profile ${state.uid}…`
+              profile.innerHTML = `loading profile ${state.uid}…`
             }
             loginForm.style.display = 'none';
             search.style.display = 'block';
           } else {
-            header.innerHTML = `not logged in`;
+            profile.style.display = 'none';
             loginForm.style.display = 'block';
             search.style.display = 'none';
           }
-          document.querySelector('#error').innerText = (state.error ? state.error : '');
+          var torrentsTable = document.querySelector('#torrents');
+          if (state.torrents) {
+            torrentsTable.style.display = 'table';
+            torrentsTable.querySelector('tbody').innerHTML = state.torrents.map(renderTorrent).join('');
+          } else {
+            torrentsTable.style.display = 'none';
+          }
+          document.querySelector('#error').innerText = (state.error ? '⚠ ' + state.error : '');
         }
 
         // Load saved infos
         state.token = localStorage.getItem('t412-token');
         state.uid = localStorage.getItem('t412-uid');
+        state.torrents = JSON.parse(localStorage.getItem('t412-torrents'));
         if (state.token && state.uid) getProfile();
+
+        //setup typing timer
+        var typingTimer;
+        var searchField = document.querySelector('#q');
+        searchField.value = localStorage.getItem('t412-query');
+        searchField.addEventListener('keyup', function(){
+          clearTimeout(typingTimer);
+          if (searchField.value) {
+            typingTimer = setTimeout(search, 500);
+          }
+        });
 
         render();
       }
       catch (exc) {
-        document.querySelector('#error').innerText = exc;
+        state.error = exc
+        document.querySelector('#error').innerText = '⚠ ' + exc;
         throw exc
       }
     </script>
