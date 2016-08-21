@@ -1,4 +1,6 @@
-![Screenshot](https://cloud.githubusercontent.com/assets/201687/17836324/9b9b6fc6-678e-11e6-9f40-6d9ecc262e23.png)
+![Screenshot](https://cloud.githubusercontent.com/assets/201687/17836343/391b856a-678f-11e6-8b67-9b046a8334ad.png)
+
+---
 
 T412 is a very simple web client for the T411 API built to provide a cleaner UI. It doesn't use a single dependency on the client side and holds entirely in the `t412.html` file (html + css + js):
 
