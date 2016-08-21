@@ -1,15 +1,20 @@
 #!/usr/bin/env node
 
+// This little node.js proxy is only here because the T411 API doesn't send CORS headers
+// so we can't query the API from a browser due to the same origin policy.
+// If they change their API, I'll be able to remove it and node.js dependencies.
+
 var express = require('express');
 var request = require('request');
 
 var apiServerHost = "https://api.t411.ch";
 var app = express();
-app.use('/', function(req, res) {
+
+app.get('/', (req,res) => { res.sendfile('t412.html'); });
+
+app.use('/', (req, res) => {
   var url = apiServerHost + req.url;
-  console.log(`→ ${url} (${req.headers["authorization"]})`);
-  res.header("Access-Control-Allow-Origin", "*");
-  res.header("Access-Control-Allow-Headers", "Authorization");
+  console.log(`→ ${req.url} (${req.headers["authorization"]})`);
   res.header("Cache-Control", "max-age=600");
   options = {
     url: url,
