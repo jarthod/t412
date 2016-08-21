@@ -2,16 +2,21 @@
   "name": "t412",
   "version": "1.0.0",
   "description": "A simple webapp using t411 API to provide a better UI on top of it",
-  "main": "cors-proxy.js",
+  "engines": {
+    "node": ">4.0.0"
+  },
+  "main": "app.js",
+  "scripts": {
+    "start": "node app.js"
+  },
   "dependencies": {
     "express": "^4.14.0",
     "request": "^2.74.0"
   },
-  "devDependencies": {},
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+  "repository": {
+    "type": "git",
+    "url": "git@github.com:jarthod/t412.git"
   },
-  "repository": "git@github.com:jarthod/t412.git",
   "author": "Adrien Jarthon",
-  "license": "ISC"
+  "license": "MIT"
 }
