@@ -10,11 +10,10 @@ var request = require('request');
 var apiServerHost = "https://api.t411.ch";
 var app = express();
 
-app.get('/', (req,res) => { res.sendfile('t412.html'); });
+app.get('/', (req,res) => { res.sendFile('t412.html', {root: __dirname}); });
 
 app.use('/', (req, res) => {
   var url = apiServerHost + req.url;
-  console.log(`→ ${req.url} (${req.headers["authorization"]})`);
   res.header("Cache-Control", "max-age=600");
   options = {
     url: url,

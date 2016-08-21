@@ -4,9 +4,9 @@
 
 T412 is a very simple web client for the T411 API built to provide a cleaner UI. It doesn't use a single dependency on the client side and holds entirely in the `t412.html` file (html + css + js):
 
-You can use the public version I'm hosting here: http://t412.fr or https://t412.herokuapp.com if you prefer HTTPS.
+You can use the public version I'm hosting here: http://t412.fr or https://t412.herokuapp.com
 
-Of you can run it locally (need node.js >= 4):
+Of you can run it locally (requires node.js >= 4):
 ```
 git clone https://github.com/jarthod/t412
 cd t412
