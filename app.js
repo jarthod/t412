@@ -7,7 +7,7 @@
 var express = require('express');
 var request = require('request');
 
-var apiServerHost = "https://api.t411.ch";
+var apiServerHost = "https://api.t411.li";
 var app = express();
 
 app.get('/', (req,res) => { res.sendFile('t412.html', {root: __dirname}); });
