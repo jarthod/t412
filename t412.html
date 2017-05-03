@@ -8,6 +8,8 @@
       a:hover { text-decoration: underline; }
       header { display: flex; align-items: center; justify-content: space-between; margin: 2vh 0; }
       h1 { margin: 0; }
+      #indicator { background-color: #27b; height: 3px; width: 0; }
+      #indicator.loading { width: 100%; transition: width 2s ease-out; }
       #error { color: #e43; margin: 2vh 0; }
       form { margin: 0; }
       #search-form { display: flex; align-items: center; font-size: 2em; margin-bottom: 1.5vh; }
@@ -21,8 +23,9 @@
     </style>
   </head>
   <body>
+    <div id="indicator"></div>
     <header>
-      <h1><a href="https://github.com/jarthod/t412" target="blank">T412</a></h1>
+      <h1><a href="https://github.com/jarthod/t412" target="blank">T412.fr</a></h1>
       <div id="profile">
       </div>
       <form id="login-form" onsubmit="signIn(); return false;">
@@ -92,7 +95,14 @@
             return window.btoa( binary );
         }
 
+        function requestIndicatorStart() {
+          var indicator = document.querySelector('#indicator');
+          indicator.className = 'loading';
+        }
+
         function handleErrors(param) {
+          var indicator = document.querySelector('#indicator');
+          indicator.className = '';
           if (param instanceof Response) {
             if (!param.ok)
               state.error = "Server error: " + param.statusText;
@@ -105,6 +115,7 @@
 
         function signIn() {
           var loginForm = document.querySelector('#login-form');
+          requestIndicatorStart();
           fetch('/auth', {method: 'POST', body: new FormData(loginForm)})
           .then(handleErrors).then(response => response.json())
           .then(auth => {
@@ -130,6 +141,7 @@
         }
 
         function getProfile() {
+          requestIndicatorStart();
           fetch('/users/profile/' + state.uid, {headers: {"Authorization": state.token}})
           .then(handleErrors).then(response => response.json()).then(profile => {
             state.profile = profile;
@@ -143,6 +155,7 @@
 
         function search() {
           var query = document.querySelector('#q').value;
+          requestIndicatorStart();
           fetch('/torrents/search/' + formatQuery(query) + '?limit=30', {headers: {"Authorization": state.token}})
           .then(handleErrors).then(response => response.json())
           .then(result => {
@@ -160,6 +173,7 @@
 
         function downloadTorrent(a, id, name) {
           if (a.download) return true;
+          requestIndicatorStart();
           fetch('/torrents/download/' + id, {headers: {"Authorization": state.token}})
           .then(handleErrors).then(response => response.arrayBuffer())
           .then(data => {
@@ -192,8 +206,10 @@
           var loginForm = document.querySelector('#login-form');
           if (state.token) {
             profile.style.display = 'block';
-            if (state.profile) {
+            if (state.profile && state.profile.username) {
               profile.innerHTML = `logged in as <b>${state.profile.username}</b> (↑ ${formatBytes(state.profile.uploaded)} / ↓ ${formatBytes(state.profile.downloaded)}) <a href="#" onclick="signOut(); return false;">sign out</a>`;
+            } else if (state.profile && state.profile.error) {
+              profile.innerHTML = `Profile fetch error: <strong>${state.profile.error}</strong> <a href="#" onclick="signOut(); return false;">sign out</a>`;
             } else {
               profile.innerHTML = `loading profile ${state.uid}…`
             }
