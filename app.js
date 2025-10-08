@@ -7,7 +7,7 @@
 var express = require('express');
 var request = require('request');
 
-var apiServerHost = "https://api.t411.al";
+var apiServerHost = "https://yggapi.eu";
 var app = express();
 
 app.get('/', (req,res) => { res.sendFile('t412.html', {root: __dirname}); });
@@ -18,7 +18,6 @@ app.use('/', (req, res) => {
   options = {
     url: url,
     headers: {
-      "Authorization": req.headers["authorization"],
       "User-Agent": "curl/7.47.0"
     }
   }

@@ -3,7 +3,7 @@
     <title>T412</title>
     <meta charset="UTF-8">
     <style type="text/css">
-      body { font-family: sans-serif; max-width: 1200px; margin: 0 auto; padding: 0 2vw; color: #333; }
+      body { font-family: sans-serif; margin: 0 auto; padding: 0 2vw; color: #333; }
       a { color: #27b; text-decoration: none; }
       a:hover { text-decoration: underline; }
       header { display: flex; align-items: center; justify-content: space-between; margin: 2vh 0; }
@@ -12,7 +12,7 @@
       #indicator.loading { width: 100%; transition: width 2s ease-out; }
       #error { color: #e43; margin: 2vh 0; }
       form { margin: 0; }
-      #search-form { display: flex; align-items: center; font-size: 2em; margin-bottom: 1.5vh; }
+      #search-form { display: flex; align-items: center; font-size: 1.5em; margin-bottom: 1.5vh; }
       #q { flex: 1; border: none; outline: none; font-size: 1em; margin-left: 0.5em; }
       table { width: 100%; }
       th { font-size: 0.8em; color: #888; text-transform: uppercase; padding: 1vh 0.5em; }
@@ -25,19 +25,16 @@
   <body>
     <div id="indicator"></div>
     <header>
-      <h1><a href="https://github.com/jarthod/t412" target="blank">T412.fr</a></h1>
-      <div id="profile">
-      </div>
-      <form id="login-form" onsubmit="signIn(); return false;">
-        <input type="text" id="username" name="username" placeholder="username"/>
-        <input type="password" id="password" name="password" placeholder="password"/>
-        <input type="submit" value="login"/>
+      <h1><a href="https://github.com/jarthod/t412" target="blank">t412.rootbox.fr</a></h1>
+      <form id="passkey-form" onchange="save(); return false;">
+        YGG Passkey:
+        <input type="text" id="passkey" name="passkey" size="40" pattern="\w{32}"/>
       </form>
     </header>
     <div id="error"></div>
     <div id="search">
       <form id="search-form" onsubmit="search(); return false;">
-        <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24"><path fill="#333" d="M21.172 24l-7.387-7.387c-1.388.874-3.024 1.387-4.785 1.387-4.971 0-9-4.029-9-9s4.029-9 9-9 9 4.029 9 9c0 1.761-.514 3.398-1.387 4.785l7.387 7.387-2.828 2.828zm-12.172-8c3.859 0 7-3.14 7-7s-3.141-7-7-7-7 3.14-7 7 3.141 7 7 7z"/></svg>
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
         <input type="text" id="q" name="q" placeholder="Query" autofocus="true"/>
       </form>
       <table id="torrents" cellpadding="0" cellspacing="0" border="0">
@@ -61,6 +58,49 @@
 
         var state = {};
         var debug = true;
+        const categories = {
+          2145: "🎞️ Film/Vidéo",
+          2178: "🎞️ Films d’animation",
+          2179: "🎞️ Séries d’animation / Mangas",
+          2180: "🎞️ Concert",
+          2181: "🎞️ Documentaires",
+          2182: "🎞️ Émissions TV",
+          2183: "🎞️ Film",
+          2184: "🎞️ Série TV",
+          2185: "🎞️ Spectacle",
+          2186: "🎞️ Sport",
+          2187: "🎞️ Vidéo-clips",
+          2139: "🎵 Audio",
+          2147: "🎵 Karaoké",
+          2148: "🎵 Musique",
+          2150: "🎵 Podcast Radio",
+          2149: "🎵 Samples",
+          2144: "💿 Application",
+          2177: "💿 Autre",
+          2176: "💿 Formation",
+          2171: "💿 Linux",
+          2172: "💿 MacOS",
+          2174: "💿 Smartphone",
+          2175: "💿 Tablette",
+          2173: "💿 Windows",
+          2142: "🎮 Jeu vidéo",
+          2167: "🎮 Autre",
+          2159: "🎮 Linux",
+          2160: "🎮 MacOS",
+          2162: "🎮 Microsoft",
+          2163: "🎮 Nintendo",
+          2165: "🎮 Smartphone",
+          2164: "🎮 Sony",
+          2166: "🎮 Tablette",
+          2161: "🎮 Windows",
+          2140: "📕 eBook",
+          2151: "📕 Audio",
+          2152: "📕 Bds",
+          2153: "📕 Comics",
+          2154: "📕 Livres",
+          2155: "📕 Mangas",
+          2156: "📕 Presse",
+        }
 
         function formatBytes(bytes, decimals) {
            if (bytes === 0) return '0 Byte';
@@ -85,16 +125,6 @@
           }
         }
 
-        function arrayBufferToBase64( buffer ) {
-            var binary = '';
-            var bytes = new Uint8Array( buffer );
-            var len = bytes.byteLength;
-            for (var i = 0; i < len; i++) {
-                binary += String.fromCharCode( bytes[ i ] );
-            }
-            return window.btoa( binary );
-        }
-
         function requestIndicatorStart() {
           var indicator = document.querySelector('#indicator');
           indicator.className = 'loading';
@@ -113,57 +143,28 @@
           render();
         }
 
-        function signIn() {
-          var loginForm = document.querySelector('#login-form');
-          requestIndicatorStart();
-          fetch('/auth', {method: 'POST', body: new FormData(loginForm)})
-          .then(handleErrors).then(response => response.json())
-          .then(auth => {
-            delete state.error;
-            if (auth.error) {
-              state.error = auth.error;
-            } else {
-              state.token = auth.token;
-              state.uid = auth.uid;
-              localStorage.setItem('t412-token', state.token);
-              localStorage.setItem('t412-uid', state.uid);
-              getProfile();
-            }
-            render();
-          }).catch(handleErrors);
-        }
-
-        function signOut() {
-          localStorage.removeItem('t412-token');
-          localStorage.removeItem('t412-uid');
-          state = {};
-          render(state);
-        }
-
-        function getProfile() {
-          requestIndicatorStart();
-          fetch('/users/profile/' + state.uid, {headers: {"Authorization": state.token}})
-          .then(handleErrors).then(response => response.json()).then(profile => {
-            state.profile = profile;
-            render();
-          }).catch(handleErrors);
-        }
-
-        function formatQuery(query) {
-          return query.split(/\s+/).map(word => (/\d/.test(word) ? word + '*' : word)).join(' ');
+        function save() {
+          state.passkey = document.querySelector('#passkey').value;
+          localStorage.setItem('ygg-passkey', state.passkey);
         }
 
         function search() {
           var query = document.querySelector('#q').value;
+          const [, season, episode] = query.match(/S(\d+)(?:E(\d+))?/i) || [];
+          const cleanedQuery = query.replace(/S\d+(?:E\d+)?/i, '').trim();
+          var params = { q: cleanedQuery, order_by: "downloads", per_page: 25 }
+          if (season) params.season = Number(season);
+          if (episode) params.episode = Number(episode);
+          if (debug) console.log(params);
           requestIndicatorStart();
-          fetch('/torrents/search/' + formatQuery(query) + '?limit=30', {headers: {"Authorization": state.token}})
+          fetch(`/torrents?${new URLSearchParams(params)}`)
           .then(handleErrors).then(response => response.json())
           .then(result => {
             delete state.error;
             if (result.error) {
               state.error = result.error;
             } else {
-              state.torrents = result.torrents.sort((a, b) => { return b.seeders - a.seeders; });
+              state.torrents = result;
               localStorage.setItem('t412-torrents', JSON.stringify(state.torrents));
               localStorage.setItem('t412-query', query);
             }
@@ -171,55 +172,21 @@
           }).catch(handleErrors);
         }
 
-        function downloadTorrent(a, id, name) {
-          if (a.download) return true;
-          requestIndicatorStart();
-          fetch('/torrents/download/' + id, {headers: {"Authorization": state.token}})
-          .then(handleErrors).then(response => response.arrayBuffer())
-          .then(data => {
-            delete state.error;
-            var encoded = arrayBufferToBase64(data);
-            a.href = 'data:application/x-bittorrent;base64,' + encoded;
-            a.download= name+'.torrent';
-            a.click();
-          }).catch(handleErrors);
-          return false;
-        }
-
         function renderTorrent(torrent) {
           return `<tr>
             <td class="name">
-              ${torrent.categoryname} /
-              <a href="#" onclick='return downloadTorrent(this, ${parseInt(torrent.id)}, ${JSON.stringify(torrent.rewritename)});'>${torrent.name}</a>
-              ${torrent.isVerified ? '' : '<i>❌</i>'}
+              ${categories[torrent.category_id]} /
+              <a href="https://yggapi.eu/torrent/${torrent.id}/download?passkey=${state.passkey}">${torrent.title}</a>
+              <a href="${torrent.link}" target="_blank">↗️</a>
             </td>
-            <td class="age">${formatAge(torrent.added)}</td>
+            <td class="age">${formatAge(torrent.uploaded_at)}</td>
             <td class="size">${formatBytes(torrent.size)}</td>
-            <td class="down">${torrent.times_completed}</td>
+            <td class="down">${torrent.downloads}</td>
             <td class="seed">${torrent.seeders}</td>
           </tr>`;
         }
 
         function render() {
-          var profile = document.querySelector('#profile');
-          var search = document.querySelector('#search');
-          var loginForm = document.querySelector('#login-form');
-          if (state.token) {
-            profile.style.display = 'block';
-            if (state.profile && state.profile.username) {
-              profile.innerHTML = `logged in as <b>${state.profile.username}</b> (↑ ${formatBytes(state.profile.uploaded)} / ↓ ${formatBytes(state.profile.downloaded)}) <a href="#" onclick="signOut(); return false;">sign out</a>`;
-            } else if (state.profile && state.profile.error) {
-              profile.innerHTML = `Profile fetch error: <strong>${state.profile.error}</strong> <a href="#" onclick="signOut(); return false;">sign out</a>`;
-            } else {
-              profile.innerHTML = `loading profile ${state.uid}…`
-            }
-            loginForm.style.display = 'none';
-            search.style.display = 'block';
-          } else {
-            profile.style.display = 'none';
-            loginForm.style.display = 'block';
-            search.style.display = 'none';
-          }
           var torrentsTable = document.querySelector('#torrents');
           if (state.torrents) {
             torrentsTable.style.display = 'table';
@@ -231,10 +198,9 @@
         }
 
         // Load saved infos
-        state.token = localStorage.getItem('t412-token');
-        state.uid = localStorage.getItem('t412-uid');
+        state.passkey = localStorage.getItem('ygg-passkey');
         state.torrents = JSON.parse(localStorage.getItem('t412-torrents'));
-        if (state.token && state.uid) getProfile();
+        document.querySelector('#passkey').value = state.passkey
 
         //setup typing timer
         var typingTimer;

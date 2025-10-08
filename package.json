@@ -1,7 +1,7 @@
 {
   "name": "t412",
-  "version": "1.0.0",
-  "description": "A simple webapp using t411 API to provide a better UI on top of it",
+  "version": "1.1.0",
+  "description": "A simple webapp using YGG Unoficial API to provide a better UI on top of it",
   "engines": {
     "node": ">4.0.0"
   },
@@ -17,6 +17,6 @@
     "type": "git",
     "url": "git@github.com:jarthod/t412.git"
   },
-  "author": "Adrien Jarthon",
+  "author": "Adrien Rey-Jarthon",
   "license": "MIT"
 }
