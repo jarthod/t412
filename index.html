@@ -43,7 +43,7 @@
             <th class="name">Name</th>
             <th class="age">Age</th>
             <th class="size">Size</th>
-            <th class="down">Downs</th>
+            <th class="down">▼ Downs</th>
             <th class="seed">Seed</th>
           </tr>
         </thead>
@@ -157,7 +157,7 @@
           if (episode) params.episode = Number(episode);
           if (debug) console.log(params);
           requestIndicatorStart();
-          fetch(`/torrents?${new URLSearchParams(params)}`)
+          fetch(`https://yggapi.eu/torrents?${new URLSearchParams(params)}`)
           .then(handleErrors).then(response => response.json())
           .then(result => {
             delete state.error;
@@ -177,7 +177,7 @@
             <td class="name">
               ${categories[torrent.category_id]} /
               <a href="https://yggapi.eu/torrent/${torrent.id}/download?passkey=${state.passkey}">${torrent.title}</a>
-              <a href="${torrent.link}" target="_blank">↗️</a>
+              <a href="${torrent.link}" target="_blank">↗</a>
             </td>
             <td class="age">${formatAge(torrent.uploaded_at)}</td>
             <td class="size">${formatBytes(torrent.size)}</td>
