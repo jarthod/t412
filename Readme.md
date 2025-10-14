@@ -1,4 +1,4 @@
-![Screenshot](https://cloud.githubusercontent.com/assets/201687/17836343/391b856a-678f-11e6-8b67-9b046a8334ad.png)
+<img width="1835" height="1189" alt="image" src="https://github.com/user-attachments/assets/35cb8dca-6c24-4c6a-b934-ef826f49856f" />
 
 ---
 
